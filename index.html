@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlucky Dip</title>
+    <style>
+        /* The pastel color palette on a sand base */
+        :root {
+            --base-sand: #FAEDCB;
+            --mint: #C9E4DE;
+            --blue: #C6DEF1;
+            --purple: #DBCDF0;
+            --pink: #F2C6DE;
+            --peach: #F7D9C4;
+            --text-color: #4A4A4A;
+            --card-bg: rgba(255, 255, 255, 0.7);
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--base-sand);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 500;
+            letter-spacing: 1px;
+            color: #7A6F66;
+            margin-bottom: 0.5rem;
+        }
+
+        p.description {
+            text-align: center;
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            color: #7A6F66;
+        }
+
+        /* Gamification Header */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 12px 20px;
+            border-radius: 30px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .level-badge {
+            background-color: var(--pink);
+            padding: 6px 14px;
+            border-radius: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            text-align: center;
+            position: relative;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Inputs and Buttons */
+        input[type="text"] {
+            width: calc(100% - 32px);
+            padding: 14px 16px;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            font-size: 1rem;
+            background-color: #ffffff;
+            margin-bottom: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            color: var(--text-color);
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--mint);
+        }
+
+        button {
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: transform 0.1s, opacity 0.2s;
+            width: 100%;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .btn-add { background-color: var(--mint); margin-bottom: 1rem; width: 100%; }
+        .btn-done { background-color: var(--blue); margin-top: 1.5rem;}
+        .dip-status { font-size: 0.85rem; color: #7A6F66; margin-top: 1rem;}
+
+        /* The NEW Interactive "Lucky Dip" Jar */
+        #dip-visual-container {
+            width: 150px;
+            height: 180px;
+            margin: 2rem auto;
+            position: relative;
+            cursor: pointer;
+            display: none; /* Hidden until tasks are added */
+        }
+
+        #dip-jar {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-white);
+            border: 4px solid var(--peach);
+            border-radius: 20px 20px 60px 60px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            box-shadow: inset 0 -10px 0 rgba(0,0,0,0.02);
+            transition: transform 0.2s ease;
+        }
+
+        /* Add a subtle hover effect (scaling down, inviting a press) */
+        #dip-visual-container:hover #dip-jar {
+            transform: scale(0.98);
+        }
+
+        /* The "Tasks" inside the jar - small dots */
+        .task-particle {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            position: absolute;
+            background-color: var(--pink);
+            transition: all 0.3s ease;
+        }
+
+        /* The Button Below the Jar */
+        .btn-interact {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            background-color: var(--peach);
+            padding: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* Animation Keyframes: The Shuffling Shuffle */
+        @keyframes shuffleDip {
+            0%   { transform: rotate(0deg) scale(1); }
+            20%  { transform: rotate(5deg) scale(0.95); }
+            40%  { transform: rotate(-5deg) scale(1.05); }
+            60%  { transform: rotate(5deg) scale(0.98); }
+            80%  { transform: rotate(-5deg) scale(1.02); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+
+        /* Triggered by JS to apply the animation */
+        .shuffling {
+            animation: shuffleDip 1.2s ease-in-out;
+        }
+
+        /* Particle motion during shuffle */
+        @keyframes jigParticle {
+            0%, 100% { transform: translate(0, 0); }
+            25%  { transform: translate(15px, -10px); }
+            50%  { transform: translate(-10px, 15px); }
+            75%  { transform: translate(10px, -5px); }
+        }
+
+        .particle-shuffling {
+            animation: jigParticle 1.2s ease-in-out;
+        }
+
+        /* Active Task View */
+        #active-task-view { display: none; opacity: 0;}
+        .active-visible { display: block !important; opacity: 1 !important; } /* Transition for revelation */
+
+        .task-box {
+            background-color: #ffffff;
+            border: 3px solid var(--purple);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin: 1rem 0;
+            word-wrap: break-word;
+            transform: scale(0.8);
+            opacity: 0;
+            transition: all 0.4s ease-out 1.2s; /* Reveals after shuffle animation */
+        }
+        
+        .active-visible .task-box { transform: scale(1); opacity: 1; }
+
+        .tip-container {
+            background-color: #ffffff;
+            border-left: 5px solid var(--pink);
+            padding: 1.2rem;
+            border-radius: 0 12px 12px 0;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            transform: translateY(10px);
+            opacity: 0;
+            transition: all 0.4s ease-out 1.4s;
+        }
+        
+        .active-visible .tip-container { transform: translateY(0); opacity: 1; }
+
+        .tip-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #7A6F66;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <h1>Unlucky Dip</h1>
+        <p class="description">Empty your mind. Draw a task. Take the first step.</p>
+
+        <div class="stats-bar">
+            <span>Completed: <span id="cleared-count">0</span></span>
+            <span class="level-badge" id="level-display">Level: Starter</span>
+        </div>
+
+        <div class="card" id="setup-view">
+            <input type="text" id="task-input" placeholder="What have you been putting off?" onkeypress="handleEnter(event)">
+            <button class="btn-add" onclick="addTask()">Put it in the dip</button>
+            
+            <div id="dip-visual-container" onclick="requestDraw()">
+                <div id="dip-jar">
+                    </div>
+                <button class="btn-interact" id="interact-btn">Reach in</button>
+            </div>
+            
+            <div class="dip-status" id="dip-status-text">The dip is empty.</div>
+        </div>
+
+        <div class="card" id="active-task-view">
+            <div style="font-size: 0.85rem; color: #7A6F66; text-transform: uppercase; letter-spacing: 1px;">Current Focus</div>
+            
+            <div class="task-box" id="current-task-text"></div>
+            
+            <div class="tip-container">
+                <div class="tip-label">How to begin</div>
+                <div id="current-tip-text"></div>
+            </div>
+
+            <button class="btn-done" onclick="markDone()">Mark as Done</button>
+        </div>
+    </div>
+
+    <script>
+        let dipArray = [];
+        let completedCount = 0;
+        let isShuffling = false; // Prevents multiple clicks during animation
+
+        // Strengths-based, actionable tips
+        const adviceList = [
+            "You work well once you find your rhythm. Set a timer for 5 minutes and commit to just that. You can stop when it rings.",
+            "Identify the single smallest physical action needed to begin. Is it opening a file? Getting a pen? Just do that one step right now.",
+            "You are capable of refining things later. Give yourself permission to do a messy, imperfect first pass.",
+            "Pair this task with something comfortable. Make a cup of tea or put on a familiar, calming playlist before you start.",
+            "Acknowledge the resistance. It is normal to want to avoid this. Notice the feeling, take a breath, and open the task anyway.",
+            "If this feels too large, write down the three smallest components of it. Hide the rest and focus only on the first item."
+        ];
+
+        // Gamification Levels
+        const levelTiers = [
+            { minTasks: 0, name: "Starter", color: "var(--pink)" },
+            { minTasks: 3, name: "Building Momentum", color: "var(--mint)" },
+            { minTasks: 7, name: "Consistent Finisher", color: "var(--blue)" },
+            { minTasks: 12, name: "Backlog Clearer", color: "var(--purple)" },
+            { minTasks: 20, name: "Task Master", color: "var(--peach)" }
+        ];
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        }
+
+        function addTask() {
+            const inputField = document.getElementById('task-input');
+            const newTask = inputField.value.trim();
+            
+            if (newTask !== '') {
+                dipArray.push(newTask);
+                inputField.value = '';
+                addParticle(); // Visual cue
+                updateUI();
+            }
+        }
+
+        // Creates a visual dot inside the jar
+        function addParticle() {
+            const jar = document.getElementById('dip-jar');
+            const particle = document.createElement('div');
+            particle.className = 'task-particle';
+            
+            // Random colors from palette
+            const colors = ['var(--mint)', 'var(--blue)', 'var(--purple)', 'var(--pink)'];
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Random position inside the jar
+            const randomBottom = Math.random() * 50 + 10; // 10px to 60px from bottom
+            const randomLeft = Math.random() * 70 + 15; // 15% to 85% width
+            
+            particle.style.bottom = `${randomBottom}px`;
+            particle.style.left = `${randomLeft}%`;
+            
+            jar.appendChild(particle);
+        }
+
+        // Handles the click on the jar - triggers the drawing sequence
+        function requestDraw() {
+            if (isShuffling || dipArray.length === 0) return;
+            isShuffling = true; // Block other clicks
+            
+            const jarContainer = document.getElementById('dip-visual-container');
+            const jar = document.getElementById('dip-jar');
+            const particles = document.querySelectorAll('.task-particle');
+            
+            // 1. Start Shuffling Animations (subtle and brief)
+            jar.classList.add('shuffling');
+            particles.forEach(p => p.classList.add('particle-shuffling'));
+            
+            // 2. Hide input UI
+            const setupView = document.getElementById('setup-view');
+            setupView.style.opacity = '0';
+
+            // 3. Set a timeout for the physical "draw" logic
+            setTimeout(performDraw, 1200); // Wait for the shuffle animation to finish
+        }
+
+        function performDraw() {
+            // Select random task and remove it from array
+            const randomIndex = Math.floor(Math.random() * dipArray.length);
+            const drawnTask = dipArray.splice(randomIndex, 1)[0];
+            
+            // Select random tip
+            const randomTip = adviceList[Math.floor(Math.random() * adviceList.length)];
+
+            // Populate the UI
+            document.getElementById('current-task-text').innerText = drawnTask;
+            document.getElementById('current-tip-text').innerText = randomTip;
+            
+            // Clear all particles
+            const jar = document.getElementById('dip-jar');
+            jar.innerHTML = ''; // Empties visual tasks
+
+            updateUI(); // Updates the status text (1 task, etc.)
+
+            // Transition: Reveal Active View
+            document.getElementById('setup-view').style.display = 'none';
+            document.getElementById('active-task-view').classList.add('active-visible');
+            
+            isShuffling = false; // Unlock clicks
+        }
+
+        function updateUI() {
+            const statusText = document.getElementById('dip-status-text');
+            const dipVisual = document.getElementById('dip-visual-container');
+            const setupView = document.getElementById('setup-view');
+            
+            // Ensure particles match array length (in case page loaded later)
+            while(document.querySelectorAll('.task-particle').length < dipArray.length) {
+                addParticle();
+            }
+
+            if (dipArray.length === 0) {
+                statusText.innerText = "The dip is empty.";
+                dipVisual.style.display = 'none';
+                setupView.style.opacity = '1'; // Bring setup back
+            } else if (dipArray.length === 1) {
+                statusText.innerText = "1 task in the dip.";
+                dipVisual.style.display = 'block';
+                setupView.style.opacity = '1';
+            } else {
+                statusText.innerText = `${dipArray.length} tasks in the dip.`;
+                dipVisual.style.display = 'block';
+                setupView.style.opacity = '1';
+            }
+        }
+
+        function markDone() {
+            completedCount++;
+            document.getElementById('cleared-count').innerText = completedCount;
+            
+            checkLevel();
+
+            // Switch views back to setup
+            const activeView = document.getElementById('active-task-view');
+            activeView.classList.remove('active-visible');
+            
+            // Delay adding setup back slightly for transition
+            setTimeout(() => {
+                const setupView = document.getElementById('setup-view');
+                setupView.style.display = 'block';
+                setupView.style.opacity = '1';
+
+                const jar = document.getElementById('dip-jar');
+                const particles = document.querySelectorAll('.task-particle');
+                
+                // Remove animation classes
+                jar.classList.remove('shuffling');
+                particles.forEach(p => p.classList.remove('particle-shuffling'));
+                
+                updateUI(); // Handles "Empty Dip" case correctly
+            }, 300);
+        }
+
+        function checkLevel() {
+            let currentTier = levelTiers[0];
+            
+            for (let tier of levelTiers) {
+                if (completedCount >= tier.minTasks) {
+                    currentTier = tier;
+                }
+            }
+
+            const badge = document.getElementById('level-display');
+            badge.innerText = `Level: ${currentTier.name}`;
+            badge.style.backgroundColor = currentTier.color;
+        }
+    </script>
+</body>
+</html>
