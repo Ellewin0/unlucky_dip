@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlucky Dip</title>
+    <style>
+        :root {
+            --base-sand: #FAEDCB;
+            --mint: #C9E4DE;
+            --blue: #C6DEF1;
+            --purple: #DBCDF0;
+            --pink: #F2C6DE;
+            --peach: #F7D9C4;
+            --text-color: #5A4E48;
+            --bg-white: rgba(255, 255, 255, 0.6);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--base-sand);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            color: #8C7A6B;
+        }
+
+        p.subtitle {
+            margin-top: 0;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background-color: var(--bg-white);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 24px);
+            padding: 12px;
+            border: 2px solid var(--peach);
+            border-radius: 8px;
+            font-size: 1rem;
+            color: var(--text-color);
+            background-color: #fff;
+            margin-bottom: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--mint);
+        }
+
+        button {
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-add { background-color: var(--mint); }
+        .btn-draw { background-color: var(--peach); width: 100%; font-size: 1.1rem; padding: 16px;}
+        .btn-done { background-color: var(--blue); margin-top: 1rem; }
+
+        .dip-status {
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            color: #8C7A6B;
+        }
+
+        #active-task-section {
+            display: none;
+            background-color: #fff;
+            border: 2px solid var(--purple);
+        }
+
+        .task-display {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background-color: var(--purple);
+            border-radius: 8px;
+        }
+
+        .tip-box {
+            background-color: var(--bg-white);
+            border-left: 4px solid var(--pink);
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .tip-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #8C7A6B;
+        }
+
+        /* Gamification Section */
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-white);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .level-badge {
+            background-color: var(--pink);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Unlucky Dip</h1>
+        <p class="subtitle">Clear your backlog. Draw a task, follow the tip, and get it done.</p>
+
+        <div class="stats-container">
+            <span>Tasks Cleared: <span id="cleared-count">0</span></span>
+            <span class="level-badge" id="level-display">Level: Starter</span>
+        </div>
+
+        <div class="card" id="input-section">
+            <input type="text" id="task-input" placeholder="What task are you putting off?" onkeypress="handleKeyPress(event)">
+            <button class="btn-add" onclick="addTask()">Add to the Dip</button>
+            <div class="dip-status" id="dip-count">The dip is currently empty.</div>
+        </div>
+
+        <div class="card" id="draw-section" style="display: none;">
+            <button class="btn-draw" onclick="drawTask()">Draw a Task</button>
+        </div>
+
+        <div class="card" id="active-task-section">
+            <div style="text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; color: #8C7A6B;">Current Task</div>
+            <div class="task-display" id="current-task"></div>
+            
+            <div class="tip-box">
+                <div class="tip-title">How to start:</div>
+                <div id="current-tip"></div>
+            </div>
+
+            <button class="btn-done" onclick="completeTask()">Mark as Done</button>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [];
+        let clearedTasks = 0;
+
+        const tips = [
+            "You are highly capable once you find your rhythm. Set a timer for 5 minutes and commit to just that. You can stop when it rings if you need to.",
+            "Identify the single smallest physical action required to begin. Is it opening a folder? Finding a phone number? Just do that one step right now.",
+            "You have tackled more complex things before. Give yourself permission to do a messy, imperfect first draft. You can refine it later using your attention to detail.",
+            "Pair this task with something pleasant. Make your favorite tea, grab a glass of cold water, or put on a familiar, calming playlist before you start.",
+            "Acknowledge the resistance. It is completely normal to want to avoid this. Notice that feeling, take a breath, and open the document anyway.",
+            "Break it down. If this task feels too big, write down the three smallest components of it. Focus only on the first one."
+        ];
+
+        const levels = [
+            { threshold: 0, title: "Starter", color: "var(--pink)" },
+            { threshold: 3, title: "Momentum Builder", color: "var(--mint)" },
+            { threshold: 7, title: "Consistent Finisher", color: "var(--blue)" },
+            { threshold: 12, title: "Backlog Clearer", color: "var(--purple)" },
+            { threshold: 20, title: "Task Master", color: "var(--peach)" }
+        ];
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addTask();
+            }
+        }
+
+        function addTask() {
+            const input = document.getElementById('task-input');
+            const task = input.value.trim();
+            
+            if (task !== '') {
+                tasks.push(task);
+                input.value = '';
+                updateDipStatus();
+            }
+        }
+
+        function updateDipStatus() {
+            const countDisplay = document.getElementById('dip-count');
+            const drawSection = document.getElementById('draw-section');
+            
+            if (tasks.length === 0) {
+                countDisplay.innerText = "The dip is currently empty.";
+                drawSection.style.display = 'none';
+            } else if (tasks.length === 1) {
+                countDisplay.innerText = "1 task waiting in the dip.";
+                drawSection.style.display = 'block';
+            } else {
+                countDisplay.innerText = `${tasks.length} tasks waiting in the dip.`;
+                drawSection.style.display = 'block';
+            }
+        }
+
+        function drawTask() {
+            if (tasks.length === 0) return;
+
+            // Hide input and draw sections, show active task section
+            document.getElementById('input-section').style.display = 'none';
+            document.getElementById('draw-section').style.display = 'none';
+            document.getElementById('active-task-section').style.display = 'block';
+
+            // Pick a random task
+            const randomIndex = Math.floor(Math.random() * tasks.length);
+            const selectedTask = tasks.splice(randomIndex, 1)[0];
+            
+            // Pick a random tip
+            const randomTip = tips[Math.floor(Math.random() * tips.length)];
+
+            // Display them
+            document.getElementById('current-task').innerText = selectedTask;
+            document.getElementById('current-tip').innerText = randomTip;
+            
+            updateDipStatus();
+        }
+
+        function completeTask() {
+            clearedTasks++;
+            document.getElementById('cleared-count').innerText = clearedTasks;
+            
+            updateLevel();
+
+            // Reset view
+            document.getElementById('active-task-section').style.display = 'none';
+            document.getElementById('input-section').style.display = 'block';
+            
+            if (tasks.length > 0) {
+                document.getElementById('draw-section').style.display = 'block';
+            }
+        }
+
+        function updateLevel() {
+            let currentLevel = levels[0];
+            for (let i = 0; i < levels.length; i++) {
+                if (clearedTasks >= levels[i].threshold) {
+                    currentLevel = levels[i];
+                }
+            }
+
+            const levelDisplay = document.getElementById('level-display');
+            levelDisplay.innerText = `Level: ${currentLevel.title}`;
+            levelDisplay.style.backgroundColor = currentLevel.color;
+        }
+    </script>
+</body>
+</html>
