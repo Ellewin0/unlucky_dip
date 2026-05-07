@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlucky Dip</title>
+    <style>
+        :root {
+            --base-sand: #FAEDCB;
+            --mint: #C9E4DE;
+            --blue: #C6DEF1;
+            --purple: #DBCDF0;
+            --pink: #F2C6DE;
+            --peach: #F7D9C4;
+            --text-color: #33245c; /* Darkened slightly for better contrast */
+            --text-muted: #5a4b83;
+            --card-bg: rgba(255, 255, 255, 0.7);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            /* Prioritizing highly legible fonts for neurodivergent accessibility */
+            font-family: "Atkinson Hyperlegible", "Aptos", "Segoe UI", system-ui, sans-serif;
+            background-color: var(--base-sand);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 520px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            color: var(--text-color);
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        p.description {
+            text-align: center;
+            font-size: 1.05rem;
+            margin-bottom: 2rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Stats Bar & Mode Button */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 14px 24px;
+            border-radius: 30px;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+
+        .mode-button {
+            border: 2px solid #d6c8ff;
+            background: #f7f2ff;
+            color: #33245c;
+            border-radius: 999px;
+            padding: 0.55rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .mode-button:hover { background: #eadfff; }
+        .mode-button:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+            outline: 3px solid #6b4eff;
+            outline-offset: 3px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Inputs and Buttons */
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 12px;
+            font-size: 1.05rem;
+            background-color: rgba(255,255,255,0.9);
+            margin-bottom: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            color: var(--text-color);
+            font-family: inherit;
+        }
+
+        textarea { resize: vertical; min-height: 120px; }
+        input[type="text"]:focus, textarea:focus { border-color: var(--mint); background-color: #fff; }
+
+        button {
+            border: none;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-bottom: 0.75rem;
+            font-family: inherit;
+        }
+
+        button:active { transform: translateY(2px); }
+        button:hover { filter: brightness(0.95); }
+
+        .btn-add { background-color: var(--mint); }
+        .btn-done { background-color: var(--blue); margin-top: 0.5rem;}
+        .btn-secondary { background-color: transparent; border: 2px solid var(--purple); margin-top: 0.5rem;}
+        .btn-small { padding: 10px 16px; font-size: 0.95rem; width: auto; background-color: var(--peach);}
+        
+        .btn-text-link {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            text-decoration: underline;
+            padding: 10px;
+            margin-top: 0.25rem;
+            box-shadow: none;
+            font-weight: 500;
+        }
+        .btn-text-link:hover { color: var(--text-color); filter: none; }
+
+        /* The Jar */
+        #dip-visual-container {
+            width: 160px;
+            height: 180px;
+            margin: 2.5rem auto 1rem auto;
+            position: relative;
+            cursor: pointer;
+            display: none;
+        }
+
+        #dip-jar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 100%);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 20px 20px 70px 70px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .task-particle {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            position: absolute;
+            animation: float 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-15px) scale(1.05); }
+        }
+
+        .btn-interact {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 130px;
+            background-color: var(--peach);
+            padding: 10px;
+            border-radius: 30px;
+            z-index: 2;
+        }
+
+        .shuffling { animation: shuffleDip 1s ease both; }
+        @keyframes shuffleDip {
+            0%, 100% { transform: rotate(0deg); }
+            20% { transform: rotate(8deg); }
+            40% { transform: rotate(-8deg); }
+            60% { transform: rotate(5deg); }
+            80% { transform: rotate(-5deg); }
+        }
+
+        /* Views */
+        .view-section { display: none; opacity: 0; transform: translateY(15px); transition: all 0.4s ease; }
+        .active-view { display: block !important; opacity: 1 !important; transform: translateY(0) !important; }
+
+        /* Dynamic Task Render Styles */
+        .section-label { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; text-align: center; margin-bottom: 1rem;}
+        
+        .drawn-task-box {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 3px solid var(--purple);
+            border-radius: 16px;
+            padding: 1.5rem;
+            font-size: 1.35rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            word-wrap: break-word;
+        }
+
+        .strategy-container {
+            background-color: rgba(255, 255, 255, 0.7);
+            border-left: 6px solid var(--pink);
+            padding: 1.2rem;
+            border-radius: 0 12px 12px 0;
+            font-size: 1.05rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        .strategy-title { color: var(--text-muted); display: block; margin-bottom: 6px; font-size: 0.85rem; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; }
+
+        .action-box {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+            text-align: left;
+        }
+
+        /* Checklists */
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            font-size: 1.05rem;
+        }
+        
+        .checklist-item input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            accent-color: var(--mint);
+            cursor: pointer;
+            margin-right: 12px;
+            margin-top: 2px;
+        }
+
+        .checklist-item.checked .editable-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+
+        .editable-text {
+            flex-grow: 1;
+            outline: none;
+            padding: 2px 4px;
+            border-bottom: 1px solid transparent;
+            line-height: 1.4;
+        }
+        .editable-text:focus { border-bottom: 1px solid var(--mint); background: rgba(201, 228, 222, 0.1); }
+
+        /* Modal Overlay for Mode Selection */
+        #mode-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mode-menu {
+            background: #ffffff;
+            border: 2px solid #eadfff;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            max-width: 360px;
+            width: 90%;
+        }
+
+        .mode-option {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid transparent;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+            font-family: inherit;
+        }
+
+        .mode-option:hover, .mode-option:focus-visible {
+            background: #f7f2ff;
+            border-color: #d6c8ff;
+        }
+
+        .mode-option strong { display: block; font-size: 1.1rem; color: var(--text-color); margin-bottom: 4px; }
+        .mode-option span { display: block; font-size: 0.95rem; color: var(--text-muted); }
+
+        .reset-container { text-align: center; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <h1>Unlucky Dip</h1>
+        <p class="description">For the tasks you keep dodging. Add them to the jar, choose how much support you want, and draw one small way in.</p>
+
+        <div class="stats-bar">
+            <span>Tiny wins: <span id="cleared-count">0</span></span>
+            <button id="modeButton" class="mode-button" aria-haspopup="true" aria-expanded="false" onclick="openModeMenu()">
+                Mode: Starter
+            </button>
+        </div>
+
+        <div class="card view-section active-view" id="setup-view">
+            
+            <div id="single-input-mode">
+                <input type="text" id="task-input" placeholder="Type one task here" onkeypress="if(event.key === 'Enter') addTaskSingle()">
+                <button class="btn-add" onclick="addTaskSingle()">Add to jar</button>
+                <div style="text-align: center; margin-top: 8px;">
+                    <button class="btn-text-link" onclick="toggleInputMode('braindump')">Brain dump multiple tasks</button>
+                </div>
+            </div>
+
+            <div id="brain-dump-mode" style="display: none;">
+                <textarea id="brain-dump-input" placeholder="Dump all your tasks here. Put each task on a new line."></textarea>
+                <button class="btn-add" onclick="addMultipleTasks()">Fill the jar</button>
+                <div style="text-align: center; margin-top: 8px;">
+                    <button class="btn-text-link" onclick="toggleInputMode('single')">Back to single task mode</button>
+                </div>
+            </div>
+            
+            <div id="dip-visual-container" onclick="requestDraw()">
+                <div id="dip-jar"></div>
+                <button class="btn-interact" id="interact-btn">Draw a task</button>
+            </div>
+            
+            <div style="font-size: 0.95rem; color: var(--text-muted); margin-top: 1.5rem; text-align: center; font-weight: 500;" id="dip-status-text">The jar is empty.</div>
+        </div>
+
+        <div class="card view-section" id="active-task-view">
+            <div id="dynamic-support-area">
+                </div>
+        </div>
+
+        <div class="reset-container">
+            <button class="btn-text-link" onclick="startNewSession()">Start a new session (Reset progress)</button>
+        </div>
+    </div>
+
+    <div id="mode-modal-overlay" onclick="closeModeMenu(event)">
+        <div class="mode-menu" role="menu" aria-label="Choose support mode" onclick="event.stopPropagation()">
+            <h3 style="margin-top:0; margin-bottom: 1rem; color: var(--text-color); font-size: 1.2rem;">How much support do you want today?</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">You can change this anytime. Choose Starter for a quick nudge, Guided for a few steps, or Deep Dive when a task feels too big.</p>
+            
+            <button class="mode-option" role="menuitem" onclick="setMode('starter')">
+                <strong>Starter</strong>
+                <span>Give me one small way to begin.</span>
+            </button>
+            <button class="mode-option" role="menuitem" onclick="setMode('guided')">
+                <strong>Guided</strong>
+                <span>Give me a few clear steps to get moving.</span>
+            </button>
+            <button class="mode-option" role="menuitem" onclick="setMode('deepDive')">
+                <strong>Deep Dive</strong>
+                <span>Break the task into a detailed checklist.</span>
+            </button>
+            
+            <button class="btn-text-link" style="width: 100%; margin-top: 1rem;" onclick="closeModeMenu()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let dipArray = JSON.parse(localStorage.getItem('unluckyDipTasks')) || [];
+        let tinyWins = parseInt(localStorage.getItem('unluckyDipCompleted')) || 0;
+        let userMode = localStorage.getItem('unluckyDipMode') || 'starter'; 
+        let currentTaskString = "";
+        let currentTaskMode = 'starter'; // Tracks escalation independent of user default
+
+        // Initialization
+        window.onload = () => {
+            document.getElementById('cleared-count').innerText = tinyWins;
+            updateModeButtonText();
+            updateUI();
+        };
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active-view'));
+            setTimeout(() => document.getElementById(viewId).classList.add('active-view'), 50);
+        }
+
+        // --- MODE MANAGEMENT ---
+        function openModeMenu() {
+            document.getElementById('mode-modal-overlay').style.display = 'flex';
+            document.getElementById('modeButton').setAttribute('aria-expanded', 'true');
+        }
+
+        function closeModeMenu(e) {
+            if(e) e.stopPropagation();
+            document.getElementById('mode-modal-overlay').style.display = 'none';
+            document.getElementById('modeButton').setAttribute('aria-expanded', 'false');
+        }
+
+        function setMode(selectedMode) {
+            userMode = selectedMode;
+            localStorage.setItem('unluckyDipMode', selectedMode);
+            updateModeButtonText();
+            closeModeMenu();
+        }
+
+        function updateModeButtonText() {
+            const btn = document.getElementById('modeButton');
+            if(userMode === 'starter') btn.innerText = "Mode: Starter";
+            if(userMode === 'guided') btn.innerText = "Mode: Guided";
+            if(userMode === 'deepDive') btn.innerText = "Mode: Deep Dive";
+        }
+
+        // --- INPUT & JAR LOGIC ---
+        function toggleInputMode(mode) {
+            if (mode === 'braindump') {
+                document.getElementById('single-input-mode').style.display = 'none';
+                document.getElementById('brain-dump-mode').style.display = 'block';
+                document.getElementById('brain-dump-input').focus();
+            } else {
+                document.getElementById('brain-dump-mode').style.display = 'none';
+                document.getElementById('single-input-mode').style.display = 'block';
+            }
+        }
+
+        function addTaskSingle() {
+            const input = document.getElementById('task-input');
+            if (input.value.trim() !== '') {
+                dipArray.push(input.value.trim());
+                input.value = '';
+                saveAndRenderNewParticle();
+            }
+        }
+
+        function addMultipleTasks() {
+            const textarea = document.getElementById('brain-dump-input');
+            const lines = textarea.value.split('\n');
+            let addedAny = false;
+
+            lines.forEach(line => {
+                const cleanLine = line.trim();
+                if (cleanLine !== '') {
+                    dipArray.push(cleanLine);
+                    addParticle(); 
+                    addedAny = true;
+                }
+            });
+
+            if (addedAny) {
+                textarea.value = '';
+                localStorage.setItem('unluckyDipTasks', JSON.stringify(dipArray));
+                updateUI();
+                toggleInputMode('single'); 
+            }
+        }
+
+        function saveAndRenderNewParticle() {
+            localStorage.setItem('unluckyDipTasks', JSON.stringify(dipArray));
+            addParticle();
+            updateUI();
+        }
+
+        function addParticle() {
+            const jar = document.getElementById('dip-jar');
+            if (jar.childElementCount >= 50) return; 
+
+            const particle = document.createElement('div');
+            particle.className = 'task-particle';
+            
+            // Adjust colors slightly based on current Mode preference to match visual instruction
+            let colors = [];
+            if(userMode === 'starter') colors = ['var(--mint)'];
+            else if (userMode === 'guided') colors = ['var(--blue)', 'var(--mint)'];
+            else colors = ['var(--purple)', 'var(--pink)'];
+
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.bottom = `${Math.random() * 60 + 20}px`;
+            particle.style.left = `${Math.random() * 60 + 20}%`;
+            particle.style.animationDelay = `${Math.random() * 2}s`;
+            
+            // Alter visual size based on mode
+            if(userMode === 'guided') { particle.style.width = '18px'; particle.style.height = '14px'; particle.style.borderRadius = '4px'; }
+            if(userMode === 'deepDive') { particle.style.width = '16px'; particle.style.height = '20px'; particle.style.borderRadius = '2px'; }
+
+            jar.appendChild(particle);
+        }
+
+        function updateUI() {
+            const statusText = document.getElementById('dip-status-text');
+            const dipVisual = document.getElementById('dip-visual-container');
+            
+            const currentParticles = document.querySelectorAll('.task-particle').length;
+            if (currentParticles === 0 && dipArray.length > 0) {
+                const loopLimit = Math.min(dipArray.length, 50);
+                for(let i = 0; i < loopLimit; i++) addParticle();
+            }
+
+            if (dipArray.length === 0) {
+                statusText.innerText = "The jar is empty. You have no pending tasks.";
+                dipVisual.style.display = 'none';
+            } else if (dipArray.length === 1) {
+                statusText.innerText = "1 task in the jar.";
+                dipVisual.style.display = 'block';
+            } else {
+                statusText.innerText = `${dipArray.length} tasks in the jar.`;
+                dipVisual.style.display = 'block';
+            }
+        }
+
+        // --- DRAWING & DYNAMIC RENDERING LOGIC ---
+        function requestDraw() {
+            if (dipArray.length === 0) return;
+            document.getElementById('dip-jar').classList.add('shuffling');
+            setTimeout(performDraw, 1000); 
+        }
+
+        function performDraw() {
+            const randomIndex = Math.floor(Math.random() * dipArray.length);
+            currentTaskString = dipArray.splice(randomIndex, 1)[0];
+            localStorage.setItem('unluckyDipTasks', JSON.stringify(dipArray));
+            
+            currentTaskMode = userMode; // Reset task escalation to user's baseline
+            renderTaskSupport(currentTaskString, currentTaskMode);
+            
+            document.getElementById('dip-jar').innerHTML = ''; 
+            updateUI(); 
+            switchView('active-task-view');
+            document.getElementById('dip-jar').classList.remove('shuffling');
+        }
+
+        function renderTaskSupport(task, mode) {
+            const supportArea = document.getElementById("dynamic-support-area");
+            
+            if (mode === "starter") {
+                supportArea.innerHTML = renderStarterSupport(task);
+            } else if (mode === "guided") {
+                supportArea.innerHTML = renderGuidedSupport(task);
+            } else if (mode === "deepDive") {
+                supportArea.innerHTML = renderDeepDiveSupport(task);
+            }
+        }
+
+        // --- ESCALATION LOGIC ---
+        function makeThisSmaller() {
+            if (currentTaskMode === "starter") {
+                currentTaskMode = "guided";
+                renderTaskSupport(currentTaskString, "guided");
+            } else if (currentTaskMode === "guided") {
+                currentTaskMode = "deepDive";
+                renderTaskSupport(currentTaskString, "deepDive");
+            } else {
+                // Already in deep dive, show supportive message
+                const msgBox = document.getElementById('deep-dive-message');
+                if(msgBox) {
+                    msgBox.innerHTML = `<span style="color: #d32f2f; font-weight: 600;">This is already broken into tiny steps. Try only the first one. You can stop after that.</span>`;
+                }
+            }
+        }
+
+        // --- TEMPLATES ---
+        function renderStarterSupport(task) {
+            const strategies = [
+                "Open the document or app. You do not need to write anything yet.",
+                "Put the item you need to work on somewhere visible.",
+                "Find the email, page, or object connected to this task.",
+                "Set a two-minute timer and only start.",
+                "Write a messy, imperfect first sentence or step."
+            ];
+            const tip = strategies[Math.floor(Math.random() * strategies.length)];
+
+            return `
+                <div class="section-label">Your Draw</div>
+                <div class="drawn-task-box">${task}</div>
+                
+                <div class="strategy-container">
+                    <strong class="strategy-title">Try this first</strong>
+                    <span>${tip} Do only that.</span>
+                </div>
+
+                <div class="action-box" id="starter-action-box">
+                    <p style="margin-top:0; color: var(--text-muted); font-weight: 600;">Define one tiny step:</p>
+                    <div style="display: flex; gap: 8px;">
+                        <input id="firstStepInput" type="text" placeholder="e.g. Open the document" style="margin-bottom:0;">
+                        <button class="btn-small" onclick="document.getElementById('starter-action-box').innerHTML = '<p style=\\'color: #4CAF50; font-weight: 600; margin:0;\\'>Nice. That counts.</p>'">Set step</button>
+                    </div>
+                </div>
+
+                <button class="btn-add" onclick="markTaskDone('I did one step')">I did one step</button>
+                <button class="btn-secondary" onclick="makeThisSmaller()">Make this smaller</button>
+                <button class="btn-text-link" style="display: block; width: 100%; margin-top: 0.5rem;" onclick="returnTaskToJar()">Put it back in the jar</button>
+                <button class="btn-text-link" style="display: block; width: 100%;" onclick="markTaskDone('Mark as done')">Mark as done</button>
+            `;
+        }
+
+        function renderGuidedSupport(task) {
+            return `
+                <div class="section-label">Your Draw</div>
+                <div class="drawn-task-box">${task}</div>
+                
+                <div class="strategy-container">
+                    <strong class="strategy-title">Try this</strong>
+                    <span>Start by working out what this task actually needs from you. The outcome does not have to be perfect.</span>
+                </div>
+
+                <div class="action-box">
+                    <strong class="strategy-title" style="margin-bottom: 12px;">Steps</strong>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Find what you need to begin</div></div>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Remove one distraction</div></div>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Start for just two minutes</div></div>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Decide whether to keep going or pause</div></div>
+                </div>
+
+                <button class="btn-done" onclick="markTaskDone('Done for now')">Done for now</button>
+                <button class="btn-secondary" onclick="makeThisSmaller()">Make this smaller</button>
+                <button class="btn-text-link" style="display: block; width: 100%; margin-top: 0.5rem;" onclick="returnTaskToJar()">Put it back in the jar</button>
+                <button class="btn-text-link" style="display: block; width: 100%;" onclick="markTaskDone('Mark as done')">Mark as done</button>
+            `;
+        }
+
+        function renderDeepDiveSupport(task) {
+            return `
+                <div class="section-label">Your Draw</div>
+                <div class="drawn-task-box">${task}</div>
+                
+                <div class="strategy-container">
+                    <strong class="strategy-title" id="deep-dive-message">Note</strong>
+                    <span>This task might feel bigger than it looks, so here is a tiny-step version. You do not need to finish the whole list.</span>
+                </div>
+
+                <div class="action-box">
+                    <strong class="strategy-title" style="margin-bottom: 12px;">Detailed Checklist</strong>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Find the task or related item</div></div>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Open it so it is visible</div></div>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Identify what "done" would look like</div></div>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Choose the easiest first physical action</div></div>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Do that action for two minutes</div></div>
+                    <div class="checklist-item"><input type="checkbox" onchange="toggleStrike(this)"><div class="editable-text" contenteditable="true">Decide whether to continue, pause, or put it back</div></div>
+                </div>
+
+                <button class="btn-done" onclick="markTaskDone('Done for now')">Done for now</button>
+                <button class="btn-text-link" style="display: block; width: 100%; margin-top: 0.5rem;" onclick="returnTaskToJar()">Put it back in the jar</button>
+                <button class="btn-text-link" style="display: block; width: 100%;" onclick="markTaskDone('Mark as done')">Mark as done</button>
+            `;
+        }
+
+        // --- INTERACTION HELPERS ---
+        function toggleStrike(checkbox) {
+            const parent = checkbox.closest('.checklist-item');
+            if(checkbox.checked) parent.classList.add('checked');
+            else parent.classList.remove('checked');
+        }
+
+        function markTaskDone(actionType) {
+            tinyWins++;
+            document.getElementById('cleared-count').innerText = tinyWins;
+            localStorage.setItem('unluckyDipCompleted', tinyWins.toString());
+            
+            // Brief visual reward
+            const btn = event.target;
+            const originalText = btn.innerText;
+            if(actionType === 'I did one step') btn.innerText = "Nice. That counts.";
+            else btn.innerText = "Task done. Beautifully out of the jar.";
+            
+            setTimeout(() => {
+                switchView('setup-view');
+            }, 1200);
+        }
+
+        function returnTaskToJar() {
+            dipArray.push(currentTaskString);
+            localStorage.setItem('unluckyDipTasks', JSON.stringify(dipArray));
+            document.getElementById('dip-jar').innerHTML = ''; 
+            
+            const btn = event.target;
+            btn.innerText = "Back in the jar. Not gone, just not now.";
+            
+            setTimeout(() => {
+                updateUI();
+                switchView('setup-view');
+            }, 1200);
+        }
+
+        function startNewSession() {
+            const confirmReset = window.confirm("This will clear all tasks in the jar and reset your Tiny Wins to zero. Are you sure?");
+            if (confirmReset) {
+                localStorage.removeItem('unluckyDipTasks');
+                localStorage.removeItem('unluckyDipCompleted');
+                dipArray = [];
+                tinyWins = 0;
+                document.getElementById('cleared-count').innerText = tinyWins;
+                document.getElementById('dip-jar').innerHTML = ''; 
+                updateUI();
+                switchView('setup-view'); 
+            }
+        }
+    </script>
+</body>
+</html>
