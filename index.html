@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlucky Dip</title>
+    <style>
+        :root {
+            --base-sand: #FAEDCB;
+            --mint: #C9E4DE;
+            --blue: #C6DEF1;
+            --purple: #DBCDF0;
+            --pink: #F2C6DE;
+            --peach: #F7D9C4;
+            --text-color: #5A4E48;
+            --card-bg: rgba(255, 255, 255, 0.6);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--base-sand);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 480px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 400;
+            letter-spacing: 2px;
+            color: #8C7A6B;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        p.description {
+            text-align: center;
+            font-size: 1rem;
+            margin-bottom: 2.5rem;
+            color: #8C7A6B;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 14px 24px;
+            border-radius: 30px;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+
+        .level-badge {
+            background-color: var(--pink);
+            padding: 6px 16px;
+            border-radius: 20px;
+            transition: background-color 0.4s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Inputs and Buttons */
+        input[type="text"] {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 16px;
+            font-size: 1.05rem;
+            background-color: rgba(255,255,255,0.9);
+            margin-bottom: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            color: var(--text-color);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--mint);
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(201, 228, 222, 0.4);
+        }
+
+        button {
+            border: none;
+            padding: 16px 24px;
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        button:hover { filter: brightness(0.95); }
+
+        .btn-add { background-color: var(--mint); margin-bottom: 1rem; }
+        .btn-done { background-color: var(--blue); margin-top: 2rem;}
+
+        /* The Frosted Glass Jar */
+        #dip-visual-container {
+            width: 160px;
+            height: 180px;
+            margin: 2.5rem auto 1rem auto;
+            position: relative;
+            cursor: pointer;
+            display: none;
+        }
+
+        #dip-jar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 20px 20px 70px 70px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            box-shadow: inset -5px -5px 20px rgba(255,255,255,0.5), 0 10px 20px rgba(0,0,0,0.03);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+        }
+
+        #dip-visual-container:hover #dip-jar { transform: scale(1.03); }
+
+        /* Floating Particles inside Jar */
+        .task-particle {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            animation: float 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-15px) scale(1.05); }
+        }
+
+        .btn-interact {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            background-color: var(--peach);
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(247, 217, 196, 0.6);
+            z-index: 2;
+        }
+
+        /* Shuffling Animation */
+        @keyframes shuffleDip {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            15% { transform: rotate(8deg) scale(0.95); }
+            30% { transform: rotate(-8deg) scale(1.02); }
+            45% { transform: rotate(6deg) scale(0.97); }
+            60% { transform: rotate(-6deg) scale(1.01); }
+            75% { transform: rotate(3deg) scale(0.99); }
+        }
+
+        .shuffling { animation: shuffleDip 1s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+
+        /* Active Task View */
+        #active-task-view { display: none; opacity: 0; transform: translateY(20px); }
+        .active-visible { display: block !important; opacity: 1 !important; transform: translateY(0) !important; }
+
+        .task-box {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 3px solid var(--purple);
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
+            font-size: 1.35rem;
+            font-weight: 500;
+            margin: 1.5rem 0;
+            word-wrap: break-word;
+            box-shadow: 0 8px 20px rgba(219, 205, 240, 0.4);
+            line-height: 1.4;
+        }
+
+        .tip-container {
+            background-color: rgba(255, 255, 255, 0.7);
+            border-left: 6px solid var(--pink);
+            padding: 1.5rem;
+            border-radius: 0 16px 16px 0;
+            text-align: left;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .tip-label {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #8C7A6B;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        /* Confetti Canvas */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--pink);
+            opacity: 0;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        @keyframes fall {
+            0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(150px) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <h1>Unlucky Dip</h1>
+        <p class="description">Empty your mind. Draw a task. Take the first step.</p>
+
+        <div class="stats-bar">
+            <span>Completed: <span id="cleared-count">0</span></span>
+            <span class="level-badge" id="level-display">Level: Starter</span>
+        </div>
+
+        <div class="card" id="setup-view">
+            <input type="text" id="task-input" placeholder="What have you been putting off?" onkeypress="handleEnter(event)">
+            <button class="btn-add" onclick="addTask()">Place in the Dip</button>
+            
+            <div id="dip-visual-container" onclick="requestDraw()">
+                <div id="dip-jar"></div>
+                <button class="btn-interact" id="interact-btn">Reach In</button>
+            </div>
+            
+            <div style="font-size: 0.9rem; color: #8C7A6B; margin-top: 1.5rem; font-weight: 500;" id="dip-status-text">The dip is empty.</div>
+        </div>
+
+        <div class="card" id="active-task-view">
+            <div style="font-size: 0.85rem; color: #8C7A6B; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">Current Focus</div>
+            <div class="task-box" id="current-task-text"></div>
+            
+            <div class="tip-container">
+                <div class="tip-label">How to begin</div>
+                <div id="current-tip-text"></div>
+            </div>
+
+            <button class="btn-done" onclick="markDone(event)">Mark as Done</button>
+        </div>
+    </div>
+
+    <script>
+        let dipArray = JSON.parse(localStorage.getItem('unluckyDipTasks')) || [];
+        let completedCount = parseInt(localStorage.getItem('unluckyDipCompleted')) || 0;
+        let isShuffling = false; 
+
+        // Updated, evidence-based, plain-language strategies
+        const adviceList = [
+            "If this feels like a giant project, let's just find the very first tiny step. You don't need to do the whole thing today. What is one small piece you can do right now?",
+            "Is this a task like cleaning or writing where your mind tends to wander? Try 'body doubling'. Call a friend on speaker, or put on a 'study with me' video. Just having someone else working nearby can really help anchor your focus.",
+            "Tell yourself you only have to do this for five minutes. Set a timer. Once it goes off, you have full permission to stop if you want to. Getting past that first five minutes is usually the hardest part.",
+            "Sometimes starting is just about lowering the barrier. You don't even have to do the task yet—just open the document, get the cleaning supplies out, or lay the tools on your desk. Just set the stage for your future self.",
+            "Take a gentle breath. It makes total sense that you've been putting this off—it's okay to feel some resistance to it. Notice that feeling, and see if you can take just one single step anyway.",
+            "Try attaching this task to something you already enjoy. Make a cup of your favorite tea, light a nice candle, or put on a playlist that makes you feel good. Let the comfortable environment ease you into it."
+        ];
+
+        const levelTiers = [
+            { minTasks: 0, name: "Starter", color: "var(--pink)" },
+            { minTasks: 3, name: "Building Momentum", color: "var(--mint)" },
+            { minTasks: 7, name: "Consistent Finisher", color: "var(--blue)" },
+            { minTasks: 12, name: "Backlog Clearer", color: "var(--purple)" },
+            { minTasks: 20, name: "Task Master", color: "var(--peach)" }
+        ];
+
+        window.onload = () => {
+            document.getElementById('cleared-count').innerText = completedCount;
+            checkLevel();
+            updateUI();
+        };
+
+        function saveData() {
+            localStorage.setItem('unluckyDipTasks', JSON.stringify(dipArray));
+            localStorage.setItem('unluckyDipCompleted', completedCount.toString());
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') addTask();
+        }
+
+        function addTask() {
+            const inputField = document.getElementById('task-input');
+            const newTask = inputField.value.trim();
+            
+            if (newTask !== '') {
+                dipArray.push(newTask);
+                inputField.value = '';
+                saveData();
+                addParticle();
+                updateUI();
+            }
+        }
+
+        function addParticle() {
+            const jar = document.getElementById('dip-jar');
+            const particle = document.createElement('div');
+            particle.className = 'task-particle';
+            
+            const colors = ['var(--mint)', 'var(--blue)', 'var(--purple)', 'var(--pink)'];
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            const randomBottom = Math.random() * 60 + 20; 
+            const randomLeft = Math.random() * 60 + 20; 
+            
+            particle.style.animationDelay = `${Math.random() * 2}s`;
+            particle.style.bottom = `${randomBottom}px`;
+            particle.style.left = `${randomLeft}%`;
+            
+            jar.appendChild(particle);
+        }
+
+        function requestDraw() {
+            if (isShuffling || dipArray.length === 0) return;
+            isShuffling = true; 
+            
+            const jar = document.getElementById('dip-jar');
+            jar.classList.add('shuffling');
+            
+            const setupView = document.getElementById('setup-view');
+            setupView.style.opacity = '0';
+
+            setTimeout(performDraw, 1000); 
+        }
+
+        function performDraw() {
+            const randomIndex = Math.floor(Math.random() * dipArray.length);
+            const drawnTask = dipArray.splice(randomIndex, 1)[0];
+            const randomTip = adviceList[Math.floor(Math.random() * adviceList.length)];
+
+            saveData(); 
+
+            document.getElementById('current-task-text').innerText = drawnTask;
+            document.getElementById('current-tip-text').innerText = randomTip;
+            
+            const jar = document.getElementById('dip-jar');
+            jar.innerHTML = ''; 
+
+            updateUI(); 
+
+            document.getElementById('setup-view').style.display = 'none';
+            document.getElementById('active-task-view').classList.add('active-visible');
+            
+            isShuffling = false; 
+        }
+
+        function updateUI() {
+            const statusText = document.getElementById('dip-status-text');
+            const dipVisual = document.getElementById('dip-visual-container');
+            const setupView = document.getElementById('setup-view');
+            
+            const currentParticles = document.querySelectorAll('.task-particle').length;
+            if (currentParticles < dipArray.length) {
+                for(let i = currentParticles; i < dipArray.length; i++) addParticle();
+            } else if (currentParticles > dipArray.length) {
+                document.getElementById('dip-jar').innerHTML = '';
+                for(let i = 0; i < dipArray.length; i++) addParticle();
+            }
+
+            if (dipArray.length === 0) {
+                statusText.innerText = "Your dip is empty. Well done.";
+                dipVisual.style.display = 'none';
+            } else if (dipArray.length === 1) {
+                statusText.innerText = "1 task waiting for you.";
+                dipVisual.style.display = 'block';
+            } else {
+                statusText.innerText = `${dipArray.length} tasks waiting for you.`;
+                dipVisual.style.display = 'block';
+            }
+            setupView.style.opacity = '1'; 
+        }
+
+        function markDone(event) {
+            completedCount++;
+            document.getElementById('cleared-count').innerText = completedCount;
+            saveData();
+            checkLevel();
+            fireConfetti(event);
+
+            const activeView = document.getElementById('active-task-view');
+            activeView.classList.remove('active-visible');
+            
+            setTimeout(() => {
+                const setupView = document.getElementById('setup-view');
+                setupView.style.display = 'block';
+                document.getElementById('dip-jar').classList.remove('shuffling');
+                setTimeout(() => setupView.style.opacity = '1', 50); 
+            }, 300);
+        }
+
+        function fireConfetti(event) {
+            const colors = ['#C9E4DE', '#C6DEF1', '#DBCDF0', '#F2C6DE', '#F7D9C4'];
+            for (let i = 0; i < 20; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const rect = event.target.getBoundingClientRect();
+                const x = rect.left + (rect.width / 2) + (Math.random() * 100 - 50);
+                const y = rect.top + (Math.random() * 40 - 20);
+                
+                confetti.style.left = `${x}px`;
+                confetti.style.top = `${y}px`;
+                
+                confetti.style.animation = `fall ${Math.random() * 0.8 + 0.6}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
+                
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => confetti.remove(), 1500);
+            }
+        }
+
+        function checkLevel() {
+            let currentTier = levelTiers[0];
+            for (let tier of levelTiers) {
+                if (completedCount >= tier.minTasks) currentTier = tier;
+            }
+
+            const badge = document.getElementById('level-display');
+            badge.innerText = `Level: ${currentTier.name}`;
+            badge.style.backgroundColor = currentTier.color;
+        }
+    </script>
+</body>
+</html>
